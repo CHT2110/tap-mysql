@@ -127,21 +127,24 @@ def to_utc_datetime_str(val):
         the_datetime = val
     elif isinstance(val, datetime.date):
         the_datetime = datetime.datetime.combine(val, datetime.datetime.min.time())
-
     elif isinstance(val, datetime.timedelta):
         epoch = datetime.datetime.utcfromtimestamp(0)
         the_datetime = epoch + val
-
     else:
         raise ValueError("{!r} is not a valid date or time type".format(val))
 
     if the_datetime.tzinfo == None:
-        # The mysql-replication library creates naive date and datetime objects
-        # which will use the local timezone thus we must set tzinfo accordingly
-        # See: https://github.com/noplay/python-mysql-replication/blob/master/pymysqlreplication/row_event.py#L143-L145
-
-        #NB> this code will only work correctly when the local time is set to UTC because of the method timestamp()
-        the_datetime = datetime.datetime.fromtimestamp(the_datetime.timestamp(), pytz.timezone('UTC'))
+        # Check if datetime is '0001-01-01'
+        if the_datetime.strftime('%Y-%m-%d') == '0001-01-01':
+            # Replace '0001-01-01' with a default date
+            the_datetime = datetime.datetime(1970, 1, 1, tzinfo=pytz.UTC)
+        else:
+            try:
+                # Try to convert the_datetime to UTC using the provided timezone
+                the_datetime = pytz.UTC.localize(the_datetime)
+            except (ValueError, OverflowError):
+                # Handle any conversion errors 
+                the_datetime = datetime.datetime(1970, 1, 1, tzinfo=pytz.UTC)
 
     return utils.strftime(the_datetime.astimezone(tz=pytz.UTC))
 
