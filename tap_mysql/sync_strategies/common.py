@@ -125,6 +125,8 @@ def generate_select_sql(catalog_entry, columns):
 def to_utc_datetime_str(val):
     if isinstance(val, datetime.datetime):
         the_datetime = val
+        if the_datetime.tzinfo == None:
+            the_datetime = pytz.UTC.localize(the_datetime)
     elif isinstance(val, datetime.date):
         the_datetime = datetime.datetime.combine(val, datetime.datetime.min.time())
 
@@ -144,6 +146,7 @@ def to_utc_datetime_str(val):
         the_datetime = datetime.datetime.fromtimestamp(the_datetime.timestamp(), pytz.timezone('UTC'))
 
     return utils.strftime(the_datetime.astimezone(tz=pytz.UTC))
+    
 
 def row_to_singer_record(catalog_entry, version, row, columns, time_extracted):
     row_to_persist = ()
